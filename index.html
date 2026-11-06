@@ -1,0 +1,490 @@
+```html
+<!DOCTYPE html>
+<html lang="es" class="h-full dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Workbuddy AI Agent (Gemini 2.5 Flash Bridge - Tab A9 Edition)</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Phosphor Icons -->
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  <!-- Google Fonts: Inter & Fira Code -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            wbNavy: '#0b132b',
+            wbCard: '#1c2541',
+            wbBorder: '#3a506b',
+            wbCyan: '#4cc9f0',
+            wbBlue: '#4895ef',
+            wbDark: '#070d1d',
+          },
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['Fira Code', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Estilos táctiles para la Samsung Tab A9 */
+    .touch-target {
+      min-height: 40px;
+      min-width: 40px;
+    }
+    
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #070d1d;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #3a506b;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #4cc9f0;
+    }
+  </style>
+</head>
+<body class="bg-wbDark text-gray-200 font-sans h-screen flex flex-col overflow-hidden select-none">
+
+  <!-- BARRA SUPERIOR (HEADER) -->
+  <header class="h-16 bg-wbNavy border-b border-wbBorder px-4 flex items-center justify-between shrink-0 z-30 gap-3">
+    
+    <!-- Logo & Status Badge -->
+    <div class="flex items-center space-x-3 shrink-0">
+      <div class="w-10 h-10 rounded-xl bg-wbCyan text-wbDark flex items-center justify-center font-bold text-xl shadow-lg shadow-wbCyan/20">
+        <i class="ph-bold ph-robot"></i>
+      </div>
+      <div>
+        <div class="flex items-center space-x-2">
+          <h1 class="font-bold text-base text-white tracking-wide">Workbuddy <span class="text-xs bg-wbBlue/20 text-wbCyan px-2 py-0.5 rounded-full border border-wbCyan/30">AI Agent</span></h1>
+        </div>
+        <p class="text-[11px] text-gray-400 flex items-center space-x-1.5 font-mono">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span>Gemini 2.5 Flash Bridge • Tab A9 Edition</span>
+        </p>
+      </div>
+    </div>
+
+    <!-- Actions & Editable Token PAT -->
+    <div class="flex items-center space-x-2 sm:space-x-3 overflow-x-auto py-1">
+      
+      <!-- Botones de Acción -->
+      <button onclick="openModal('create-repo')" class="px-3 py-2 bg-wbCard hover:bg-wbBorder text-wbCyan border border-wbCyan/40 rounded-xl text-xs font-semibold flex items-center space-x-1.5 transition touch-target shrink-0">
+        <i class="ph-bold ph-git-fork text-sm"></i>
+        <span>+ Nuevo Repo</span>
+      </button>
+
+      <button onclick="openModal('create-file')" class="px-3 py-2 bg-wbCard hover:bg-wbBorder text-wbCyan border border-wbCyan/40 rounded-xl text-xs font-semibold flex items-center space-x-1.5 transition touch-target shrink-0">
+        <i class="ph-bold ph-file-plus text-sm"></i>
+        <span>+ Archivo</span>
+      </button>
+
+      <button onclick="openModal('delete-file')" class="px-3 py-2 bg-rose-950/60 hover:bg-rose-900 text-rose-300 border border-rose-500/40 rounded-xl text-xs font-semibold flex items-center space-x-1.5 transition touch-target shrink-0">
+        <i class="ph-bold ph-trash text-sm"></i>
+        <span>Borrar</span>
+      </button>
+
+      <!-- Campo de Input Token PAT TOTALMENTE EDITABLE -->
+      <div class="flex items-center space-x-1.5 px-3 py-1.5 bg-wbCard border border-wbCyan/50 rounded-xl text-xs font-mono shadow-inner focus-within:ring-2 focus-within:ring-wbCyan shrink-0">
+        <i class="ph-bold ph-key text-wbCyan text-sm"></i>
+        <span class="text-gray-400 text-[11px] hidden sm:inline">Token PAT:</span>
+        <input 
+          type="password" 
+          id="patTokenInput" 
+          placeholder="ghp_IngresaTuTokenAqui" 
+          value=""
+          autocomplete="off"
+          spellcheck="false"
+          class="bg-transparent text-emerald-400 font-mono text-xs w-28 sm:w-40 focus:outline-none placeholder-gray-500"
+          oninput="updateTokenStatus(this.value)"
+        />
+        <button 
+          type="button" 
+          onclick="toggleTokenVisibility()" 
+          class="text-gray-400 hover:text-wbCyan transition p-1 rounded"
+          title="Mostrar/Ocultar Token"
+        >
+          <i id="tokenEyeIcon" class="ph-bold ph-eye text-sm"></i>
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- WORKSPACE PRINCIPAL (3 COLUMNAS RESPONSIVAS) -->
+  <div class="flex-1 flex overflow-hidden relative">
+
+    <!-- COLUMNA IZQUIERDA: SIDEBAR / EXPLORADOR DE ARCHIVOS -->
+    <aside class="w-64 bg-wbNavy border-r border-wbBorder flex flex-col shrink-0 z-10">
+      
+      <!-- Selector de Repositorio Activo -->
+      <div class="p-3 border-b border-wbBorder bg-wbDark/50">
+        <label class="text-[10px] uppercase font-bold text-wbCyan tracking-wider block mb-1">Repositorio Activo</label>
+        <div class="relative">
+          <select id="repoSelect" onchange="changeRepo(this.value)" class="w-full bg-wbCard text-white text-xs font-mono rounded-xl px-3 py-2 border border-wbBorder focus:outline-none focus:border-wbCyan appearance-none cursor-pointer pr-8">
+            <option value="user/nexus-demo-app">user/nexus-demo-app</option>
+            <option value="user/workbuddy-web">user/workbuddy-web</option>
+            <option value="user/gemini-bot">user/gemini-bot</option>
+          </select>
+          <i class="ph-bold ph-caret-down absolute right-2.5 top-3 text-wbCyan pointer-events-none text-xs"></i>
+        </div>
+      </div>
+
+      <!-- Encabezado de Archivos -->
+      <div class="px-3 py-2 flex items-center justify-between border-b border-wbBorder text-xs text-gray-400 font-semibold">
+        <span class="flex items-center space-x-1.5">
+          <i class="ph-bold ph-folder-open text-wbCyan"></i>
+          <span>Archivos del Repo</span>
+        </span>
+        <i class="ph-bold ph-arrows-clockwise text-wbCyan cursor-pointer hover:rotate-180 transition" title="Refrescar"></i>
+      </div>
+
+      <!-- Árbol de Archivos -->
+      <div class="flex-1 overflow-y-auto p-2 space-y-1 font-mono text-xs" id="fileTree">
+        <!-- Renderizado dinámicamente -->
+      </div>
+    </aside>
+
+    <!-- COLUMNA CENTRAL & DERECHA: EDITOR DE CÓDIGO Y CHAT DE GEMINI -->
+    <main class="flex-1 flex flex-col lg:flex-row overflow-hidden bg-wbDark">
+      
+      <!-- SECCIÓN DEL EDITOR DE CÓDIGO (MITAD IZQUIERDA EN DESKTOP/TAB) -->
+      <section class="flex-1 flex flex-col border-b lg:border-b-0 lg:border-r border-wbBorder overflow-hidden">
+        
+        <!-- Barra de Pestañas de Archivos Abiertos -->
+        <div class="h-10 bg-wbNavy border-b border-wbBorder flex items-center px-2 space-x-1 overflow-x-auto shrink-0" id="tabsBar">
+          <!-- Renderizado por JS -->
+        </div>
+
+        <!-- Barra de Acciones del Editor -->
+        <div class="h-10 px-3 bg-wbCard/40 border-b border-wbBorder flex items-center justify-between shrink-0">
+          <div class="flex items-center space-x-2 text-xs font-mono">
+            <i class="ph-bold ph-file-code text-wbCyan"></i>
+            <span id="activeFileTitle" class="text-white font-semibold">index.js</span>
+            <span id="tokenBadge" class="text-[9px] text-amber-400 bg-amber-950/60 px-2 py-0.5 rounded border border-amber-500/30">PAT Requerido</span>
+          </div>
+          <div class="flex items-center space-x-2">
+            <button onclick="saveFile()" class="px-2.5 py-1 bg-wbCard hover:bg-wbBorder text-wbCyan rounded-lg text-xs font-semibold flex items-center space-x-1 border border-wbCyan/30">
+              <i class="ph-bold ph-floppy-disk"></i>
+              <span>Guardar</span>
+            </button>
+            <button onclick="commitAndPush()" class="px-2.5 py-1 bg-wbCyan text-wbDark rounded-lg text-xs font-bold flex items-center space-x-1 hover:bg-wbBlue transition">
+              <i class="ph-bold ph-cloud-arrow-up"></i>
+              <span>Commit & Push</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- ÁREA DEL TEXTAREA / CÓDIGO -->
+        <div class="flex-1 relative bg-wbDark font-mono text-xs overflow-hidden">
+          <textarea 
+            id="codeEditor" 
+            spellcheck="false" 
+            class="w-full h-full bg-transparent text-gray-100 p-4 resize-none focus:outline-none font-mono text-xs leading-relaxed"
+          ></textarea>
+        </div>
+      </section>
+
+      <!-- SECCIÓN DEL CHAT DE GEMINI AI AGENT (MITAD DERECHA) -->
+      <section class="w-full lg:w-96 flex flex-col bg-wbNavy/60 overflow-hidden shrink-0">
+        
+        <!-- Encabezado del Chat -->
+        <div class="h-10 px-3 bg-wbNavy border-b border-wbBorder flex items-center justify-between shrink-0">
+          <div class="flex items-center space-x-2">
+            <i class="ph-bold ph-sparkle text-wbCyan"></i>
+            <span class="text-xs font-bold text-white">Agente Inteligente Gemini</span>
+          </div>
+          <span class="text-[9px] bg-wbBlue/20 text-wbCyan px-2 py-0.5 rounded-full border border-wbCyan/30 font-mono">Function Calling Active</span>
+        </div>
+
+        <!-- Mensajes del Chat -->
+        <div id="chatMessages" class="flex-1 overflow-y-auto p-3 space-y-3 text-xs">
+          <div class="flex items-start space-x-2">
+            <div class="w-6 h-6 rounded-lg bg-wbCyan text-wbDark flex items-center justify-center shrink-0 font-bold text-xs">
+              <i class="ph-bold ph-robot"></i>
+            </div>
+            <div class="bg-wbCard border border-wbBorder rounded-2xl rounded-tl-none p-3 text-gray-200">
+              Historial de chat listo. ¿En qué puedo ayudarte a editar o sincronizar con GitHub?
+            </div>
+          </div>
+        </div>
+
+        <!-- Entrada de Texto del Chat -->
+        <div class="p-2.5 bg-wbNavy border-t border-wbBorder shrink-0">
+          <form onsubmit="handleSendChat(event)" class="flex items-center space-x-2">
+            <input 
+              type="text" 
+              id="chatInput" 
+              placeholder="Escribe una orden a Gemini (ej. 'Modifica index.js')..." 
+              class="flex-1 bg-wbDark text-white text-xs rounded-xl px-3 py-2.5 border border-wbBorder focus:outline-none focus:border-wbCyan placeholder-gray-500"
+            />
+            <button type="submit" class="w-9 h-9 bg-wbCyan text-wbDark rounded-xl flex items-center justify-center font-bold hover:bg-wbBlue transition">
+              <i class="ph-bold ph-paper-plane-right text-base"></i>
+            </button>
+          </form>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- MODALES SIMPLES -->
+  <div id="modal-create-repo" class="fixed inset-0 bg-wbDark/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-wbCard border border-wbBorder rounded-2xl w-full max-w-xs p-4 space-y-3">
+      <h3 class="text-sm font-bold text-white">Nuevo Repositorio</h3>
+      <input type="text" id="newRepoInput" placeholder="nombre-del-repo" class="w-full bg-wbDark text-white text-xs rounded-xl p-2.5 border border-wbBorder">
+      <div class="flex justify-end space-x-2">
+        <button onclick="closeModal('create-repo')" class="px-3 py-1.5 text-xs text-gray-400">Cancelar</button>
+        <button onclick="submitNewRepo()" class="px-3 py-1.5 bg-wbCyan text-wbDark rounded-xl text-xs font-bold">Crear</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modal-create-file" class="fixed inset-0 bg-wbDark/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-wbCard border border-wbBorder rounded-2xl w-full max-w-xs p-4 space-y-3">
+      <h3 class="text-sm font-bold text-white">Nuevo Archivo</h3>
+      <input type="text" id="newFileInput" placeholder="ej. script.js" class="w-full bg-wbDark text-white text-xs rounded-xl p-2.5 border border-wbBorder">
+      <div class="flex justify-end space-x-2">
+        <button onclick="closeModal('create-file')" class="px-3 py-1.5 text-xs text-gray-400">Cancelar</button>
+        <button onclick="submitNewFile()" class="px-3 py-1.5 bg-wbCyan text-wbDark rounded-xl text-xs font-bold">Crear</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Estado en Memoria
+    const state = {
+      activeRepo: 'user/nexus-demo-app',
+      activeFile: 'index.js',
+      openTabs: ['index.js', 'README.md', 'package.json'],
+      repos: {
+        'user/nexus-demo-app': {
+          'index.js': `// Workbuddy Gemini 2.5 Flash Bridge\nconsole.log("Servidor inicializado correctamente en Tab A9");\n\nfunction processTask(taskName) {\n  return \`Tarea \${taskName} ejecutada con Gemini AI\`;\n}`,
+          'README.md': `# Nexus Demo App\n\nProyecto conectado vía Workbuddy AI Agent desde Samsung Tab A9.`,
+          'package.json': `{\n  "name": "nexus-demo-app",\n  "version": "1.0.0",\n  "main": "index.js"\n}`
+        },
+        'user/workbuddy-web': {
+          'app.js': `console.log("Workbuddy Web App running...");`
+        }
+      }
+    };
+
+    // Inicializar Interfaz
+    window.addEventListener('DOMContentLoaded', () => {
+      renderTabs();
+      renderFileTree();
+      loadActiveFileContent();
+    });
+
+    // Visibilidad del Token PAT
+    function toggleTokenVisibility() {
+      const input = document.getElementById('patTokenInput');
+      const icon = document.getElementById('tokenEyeIcon');
+      if (input.type === 'password') {
+        input.type = 'text';
+        icon.className = 'ph-bold ph-eye-slash text-sm text-wbCyan';
+      } else {
+        input.type = 'password';
+        icon.className = 'ph-bold ph-eye text-sm';
+      }
+    }
+
+    function updateTokenStatus(val) {
+      const badge = document.getElementById('tokenBadge');
+      if (val.trim().length > 5) {
+        badge.innerText = 'PAT Conectado';
+        badge.className = 'text-[9px] text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-500/30';
+      } else {
+        badge.innerText = 'PAT Requerido';
+        badge.className = 'text-[9px] text-amber-400 bg-amber-950/60 px-2 py-0.5 rounded border border-amber-500/30';
+      }
+    }
+
+    // Renderizado de Pestañas
+    function renderTabs() {
+      const container = document.getElementById('tabsBar');
+      container.innerHTML = '';
+      state.openTabs.forEach(file => {
+        const isActive = file === state.activeFile;
+        const tab = document.createElement('div');
+        tab.className = `flex items-center space-x-2 px-3 py-1.5 rounded-t-xl text-xs font-mono cursor-pointer transition shrink-0 ${
+          isActive 
+            ? 'bg-wbDark text-wbCyan border-t-2 border-wbCyan font-semibold' 
+            : 'bg-wbNavy/40 text-gray-400 hover:text-white'
+        }`;
+        tab.innerHTML = `
+          <span onclick="setActiveFile('${file}')">${file}</span>
+          <i class="ph-bold ph-x text-gray-500 hover:text-rose-400" onclick="closeTab(event, '${file}')"></i>
+        `;
+        container.appendChild(tab);
+      });
+    }
+
+    // Renderizado del Árbol de Archivos
+    function renderFileTree() {
+      const container = document.getElementById('fileTree');
+      const files = state.repos[state.activeRepo] || {};
+      container.innerHTML = '';
+
+      Object.keys(files).forEach(file => {
+        const isActive = file === state.activeFile;
+        const item = document.createElement('div');
+        item.className = `flex items-center space-x-2 p-2 rounded-xl cursor-pointer transition ${
+          isActive ? 'bg-wbCard text-wbCyan border border-wbCyan/30 font-semibold' : 'text-gray-300 hover:bg-wbCard/50'
+        }`;
+        item.onclick = () => openFile(file);
+        item.innerHTML = `
+          <i class="ph-bold ph-file-code text-sm"></i>
+          <span>${file}</span>
+        `;
+        container.appendChild(item);
+      });
+    }
+
+    function setActiveFile(file) {
+      state.activeFile = file;
+      renderTabs();
+      renderFileTree();
+      loadActiveFileContent();
+    }
+
+    function openFile(file) {
+      if (!state.openTabs.includes(file)) {
+        state.openTabs.push(file);
+      }
+      setActiveFile(file);
+    }
+
+    function closeTab(e, file) {
+      e.stopPropagation();
+      state.openTabs = state.openTabs.filter(f => f !== file);
+      if (state.activeFile === file) {
+        state.activeFile = state.openTabs[0] || '';
+      }
+      renderTabs();
+      renderFileTree();
+      loadActiveFileContent();
+    }
+
+    function loadActiveFileContent() {
+      const editor = document.getElementById('codeEditor');
+      const title = document.getElementById('activeFileTitle');
+      if (!state.activeFile) {
+        editor.value = '';
+        title.innerText = 'Sin archivo';
+        return;
+      }
+      title.innerText = state.activeFile;
+      editor.value = state.repos[state.activeRepo][state.activeFile] || '';
+    }
+
+    function saveFile() {
+      if (!state.activeFile) return;
+      state.repos[state.activeRepo][state.activeFile] = document.getElementById('codeEditor').value;
+      addChatMessage('robot', `✅ Archivo \`${state.activeFile}\` guardado.`);
+    }
+
+    function commitAndPush() {
+      saveFile();
+      addChatMessage('robot', `🚀 **Commit & Push:** Cambios de \`${state.activeFile}\` enviados a GitHub.`);
+    }
+
+    function changeRepo(repo) {
+      state.activeRepo = repo;
+      const files = Object.keys(state.repos[repo] || {});
+      state.openTabs = files;
+      state.activeFile = files[0] || '';
+      renderTabs();
+      renderFileTree();
+      loadActiveFileContent();
+      addChatMessage('robot', `Cambiado al repositorio **${repo}**.`);
+    }
+
+    // Manejo de Chat
+    function handleSendChat(e) {
+      e.preventDefault();
+      const input = document.getElementById('chatInput');
+      const val = input.value.trim();
+      if (!val) return;
+
+      addChatMessage('user', val);
+      input.value = '';
+
+      setTimeout(() => {
+        addChatMessage('robot', `Procesando tu instrucción *"_${val}_"* usando Gemini 2.5 Flash Bridge.`);
+      }, 500);
+    }
+
+    function addChatMessage(role, text) {
+      const container = document.getElementById('chatMessages');
+      const msg = document.createElement('div');
+      msg.className = `flex items-start space-x-2 text-xs ${role === 'user' ? 'justify-end' : ''}`;
+      
+      if (role === 'user') {
+        msg.innerHTML = `
+          <div class="bg-wbBlue text-wbDark rounded-2xl rounded-tr-none p-3 font-semibold max-w-[85%]">
+            ${text}
+          </div>
+        `;
+      } else {
+        msg.innerHTML = `
+          <div class="w-6 h-6 rounded-lg bg-wbCyan text-wbDark flex items-center justify-center shrink-0 font-bold text-xs">
+            <i class="ph-bold ph-robot"></i>
+          </div>
+          <div class="bg-wbCard border border-wbBorder rounded-2xl rounded-tl-none p-3 text-gray-200 max-w-[85%]">
+            ${text}
+          </div>
+        `;
+      }
+      container.appendChild(msg);
+      container.scrollTop = container.scrollHeight;
+    }
+
+    // Modales
+    function openModal(id) { document.getElementById(`modal-${id}`).classList.remove('hidden'); }
+    function closeModal(id) { document.getElementById(`modal-${id}`).classList.add('hidden'); }
+
+    function submitNewRepo() {
+      const val = document.getElementById('newRepoInput').value.trim();
+      if (!val) return;
+      const fullRepo = `user/${val}`;
+      state.repos[fullRepo] = { 'README.md': `# ${val}` };
+      
+      const select = document.getElementById('repoSelect');
+      const opt = document.createElement('option');
+      opt.value = fullRepo;
+      opt.innerText = fullRepo;
+      select.appendChild(opt);
+      
+      closeModal('create-repo');
+      changeRepo(fullRepo);
+    }
+
+    function submitNewFile() {
+      const val = document.getElementById('newFileInput').value.trim();
+      if (!val) return;
+      state.repos[state.activeRepo][val] = '// Nuevo archivo';
+      closeModal('create-file');
+      openFile(val);
+    }
+  </script>
+</body>
+</html>
+```
